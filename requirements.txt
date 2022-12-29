@@ -1,7 +1,0 @@
-tensorflow==2.8.0
-torch
-gym==0.20.0
-matplotlib
-Box2D
-protobuf==3.20
-importlib-metadata==4.13.0
