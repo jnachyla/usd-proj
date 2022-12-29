@@ -20,9 +20,10 @@ def get_actor(num_states, upper_bound):
     inputs = layers.Input(shape=(num_states,))
     out = layers.Dense(256, activation="relu")(inputs)
     out = layers.Dense(256, activation="relu")(out)
-    outputs = layers.Dense(1, activation="softmax", kernel_initializer=last_init)(out)
+    outputs = layers.Dense(1, activation="tanh", kernel_initializer=last_init)(out)
 
-    outputs = outputs
+    outputs = outputs * upper_bound
+
     model = tf.keras.Model(inputs, outputs)
     return model
 
@@ -69,7 +70,7 @@ class ActorCriticModel(object):
 
         self.running_reward = 0
         self.episode_count = 0
-        self.num_episodes = 10000
+        self.num_episodes = 1000
         self.num_actions = env.action_space.shape[0]
 
         self.num_states = num_states
@@ -83,14 +84,16 @@ class ActorCriticModel(object):
         self.critic_net.compile(optimizer = self.optimizer_cri)
         self.actor_net.compile(optimizer = self.optimizer_actor)
     def fun_target(self, reward, s_next):
-        return reward * self.gamma * self.critic_net(s_next)
+        return reward + self.gamma * self.critic_net(s_next)
 
     def learn(self):
-        state = self.env.reset()[0]
+
         running_reward = 0
         episode_count = 0
         while(True):
+            state = self.env.reset()[0]
             episode_reward = 0
+            actions = []
 
             # Update running reward to check condition for solving
 
@@ -101,17 +104,17 @@ class ActorCriticModel(object):
                     state = self.to_tensor(state)
                     # pobieramy akcje
                     action = self.choose_action(state)
-
+                    # t
                     # wykonujemy akcje w chwili t
                     observation, reward, terminated, truncated, info = self.env.step(self.to_n_array(action))
-
+                    # t+1
                     #liczymy poprawkę czasową
 
                     next_state = self.to_tensor(observation)
 
                     # poprawka czasowa
-                    # target   = r(t + 1) + gamma * V(t + 1)
-                    # delta_value  = target - V(t)
+                    # target   =
+                    # delta_value  = r(t + 1) + gamma * V(t + 1) - V(t)
 
                     target  = self.fun_target(reward, next_state)
                     critic_out = self.critic_net(state)
@@ -140,11 +143,13 @@ class ActorCriticModel(object):
 
 
                     episode_reward += reward
+                    if timestep % 100 == 0:
+                        template = "episode reward: {:.2f} at step {}"
+                        print(template.format(episode_reward, timestep))
 
                     state = next_state
 
-                    if terminated:
-                        break
+                    if terminated: break
             print("Episode reward = {}".format(episode_reward))
             # Log details
             episode_count += 1
@@ -171,17 +176,18 @@ class ActorCriticModel(object):
     def choose_action(self, state):
         squeeze = tf.squeeze(state)
         squeeze = tf.expand_dims(squeeze, 0)
-        sampled_probability = tf.squeeze(self.actor_net(squeeze))
+        actor_out = tf.squeeze(self.actor_net(squeeze))
 
-        action = tf.random.truncated_normal(
-            shape=[1],
-            mean=sampled_probability,
-            stddev=1.0,
-            dtype=float
-        )
+        # action = tf.random.truncated_normal(
+        #     shape=[1],
+        #     mean=actor_out,
+        #     stddev=1.0,
+        #     dtype=float
+        # )
 
         # We make sure action is within bounds
-        legal_action = tf.clip_by_value(action, self.lower_bound, self.upper_bound)
+        print(actor_out)
+        legal_action = tf.clip_by_value(actor_out, self.lower_bound, self.upper_bound)
 
         return tf.squeeze(legal_action)
 
@@ -189,6 +195,7 @@ class ActorCriticModel(object):
 def run():
     # see https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
     problem = "Pendulum-v1"
+    problem2  = 'InvertedPendulum-v4'
     env = gym.make(problem)
     num_states = env.observation_space.shape[0]
     print("Size of State Space ->  {}".format(num_states))

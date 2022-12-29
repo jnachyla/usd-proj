@@ -5,3 +5,4 @@ matplotlib
 Box2D
 protobuf==3.20
 importlib-metadata==4.13.0
+mujoco
