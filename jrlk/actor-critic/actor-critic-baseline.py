@@ -182,6 +182,8 @@ class ActorCriticModel(object):
                     self.optimizer_cri.apply_gradients(zip(grads_cri, self.critic_net.trainable_variables))
 
                     episode_rewards.append(reward)
+                    if loss_actor == np.NAN:
+                        print(loss_actor)
                     episode_losses_actor.append(loss_actor.numpy())
                     episode_losses_cri.append(delta_value.numpy())
                     episode_reward += reward
@@ -241,7 +243,7 @@ def generate_x_vals(vals):
     return [i for i in range(len(vals))]
 
 def draw_results(actor_losses_history, critic_losses_history, rewards_history):
-    average_rewards = [sum(r) / len(r) for r in rewards_history]
+    average_rewards = [sum(r) for r in rewards_history]
     all_rewards = flatten(rewards_history)
     average_losses_critic = [sum(r) / len(r) for r in critic_losses_history]
     all_losses_critic = flatten(critic_losses_history)
@@ -250,7 +252,7 @@ def draw_results(actor_losses_history, critic_losses_history, rewards_history):
     fig, axs = plt.subplots(4)
 
     fig.suptitle('Actor Critic Baseline Pendulum')
-    axs[0].plot(generate_x_vals(average_rewards), average_rewards, '-r', label="AVG Rewards")
+    axs[0].plot(generate_x_vals(average_rewards), average_rewards, '-r', label="Cumulative Rewards")
     axs[1].plot(generate_x_vals(all_rewards), all_rewards, '-g', label="All rewards")
     axs[2].plot(generate_x_vals(average_losses_critic), average_losses_critic, '*-b', label="AVG Losses Critic")
     axs[2].plot(generate_x_vals(average_losses_actor), average_losses_actor, '-r', label="AVG Losses Actor")
@@ -293,7 +295,7 @@ def run():
                           num_states=num_states,
                           upper_bound=upper_bound,
                           lower_bound=lower_bound,
-                          max_episodes=10,
+                          max_episodes=30,
                           episode_len=3000)
 
     rewards_history, actor_losses_history, critic_losses_history = ac.learn()
