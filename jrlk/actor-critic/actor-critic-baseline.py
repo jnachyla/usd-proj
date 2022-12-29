@@ -295,7 +295,7 @@ def run():
                           num_states=num_states,
                           upper_bound=upper_bound,
                           lower_bound=lower_bound,
-                          max_episodes=30,
+                          max_episodes=100,
                           episode_len=3000)
 
     rewards_history, actor_losses_history, critic_losses_history = ac.learn()
