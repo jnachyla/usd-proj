@@ -93,9 +93,6 @@ class OUActionNoise:
             self.x_prev = np.zeros_like(self.mean)
 
 
-
-
-
 class Buffer:
     def __init__(self, buffer_capacity=100000, batch_size=64, num_states=-1, num_actions=-1):
         self.num_states = num_states
@@ -139,9 +136,17 @@ class Buffer:
         # See Pseudo Code.
         with tf.GradientTape() as tape:
             target_actions = target_actor(next_state_batch, training=True)
+            legal_gaussian_noise = np.clip(np.random.normal(0.0, 0.2), -0.5, 0.5)
+            target_actions += legal_gaussian_noise
+            clipped_target_actions = np.clip(target_actions + legal_gaussian_noise, lower_bound, upper_bound)
+            legal_target_actions = np.squeeze(clipped_target_actions)
+
             y = reward_batch + gamma * target_critic(
-                [next_state_batch, target_actions], training=True
+                [next_state_batch, legal_target_actions], training=True
             )
+
+
+
             critic_value = critic_model([state_batch, action_batch], training=True)
             critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
 
