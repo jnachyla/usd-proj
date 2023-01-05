@@ -105,8 +105,6 @@ class ActorCriticModel(object):
         self.episode_count = 0
 
 
-
-
         self.num_actions = env.action_space.shape[0]
 
         self.num_states = num_states
