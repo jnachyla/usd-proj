@@ -136,16 +136,12 @@ class Buffer:
         # See Pseudo Code.
         with tf.GradientTape() as tape:
             target_actions = target_actor(next_state_batch, training=True)
-            legal_gaussian_noise = np.clip(np.random.normal(0.0, 0.2), -0.5, 0.5)
-            target_actions += legal_gaussian_noise
-            clipped_target_actions = np.clip(target_actions + legal_gaussian_noise, lower_bound, upper_bound)
-            legal_target_actions = np.squeeze(clipped_target_actions)
+
+            legal_target_noised = self.noised_actions(target_actions)
 
             y = reward_batch + gamma * target_critic(
-                [next_state_batch, legal_target_actions], training=True
+                [next_state_batch, legal_target_noised], training=True
             )
-
-
 
             critic_value = critic_model([state_batch, action_batch], training=True)
             critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
@@ -166,6 +162,15 @@ class Buffer:
         actor_optimizer.apply_gradients(
             zip(actor_grad, actor_model.trainable_variables)
         )
+
+    @tf.function
+    def noised_actions(self, target_actions):
+        gauss = tf.random.normal(shape=(64, 1), mean=0.0, stddev=0.2)
+        target_actions_noised = target_actions + gauss
+        legal_target_noised = tf.clip_by_value(
+            target_actions_noised, -2.0, 2.0, name=None
+        )
+        return legal_target_noised
 
     # We compute the loss and update parameters
     def learn(self):
