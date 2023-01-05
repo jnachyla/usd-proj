@@ -10,8 +10,7 @@ from keras import layers
 from keras import backend as K
 import numpy as np
 import matplotlib
-
-matplotlib.use('TkAgg')  # zainstalowalam tkinter w terminalu komenda: sudo apt-get install python3-tk
+matplotlib.use('TkAgg') # zainstalowalam tkinter w terminalu komenda: sudo apt-get install python3-tk
 from matplotlib import pyplot as plt
 
 
@@ -137,10 +136,16 @@ class Buffer:
         # See Pseudo Code.
         with tf.GradientTape() as tape:
             target_actions = target_actor(next_state_batch, training=True)
+            legal_gaussian_noise = np.clip(np.random.normal(0.0, 0.2), -0.5, 0.5)
+            target_actions += legal_gaussian_noise
+            clipped_target_actions = np.clip(target_actions + legal_gaussian_noise, lower_bound, upper_bound)
+            legal_target_actions = np.squeeze(clipped_target_actions)
 
             y = reward_batch + gamma * target_critic(
-                [next_state_batch, target_actions], training=True
+                [next_state_batch, legal_target_actions], training=True
             )
+
+
 
             critic_value = critic_model([state_batch, action_batch], training=True)
             critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
@@ -177,6 +182,8 @@ class Buffer:
         next_state_batch = tf.convert_to_tensor(self.next_state_buffer[batch_indices])
 
         self.update(state_batch, action_batch, reward_batch, next_state_batch)
+
+
 
 
 # This update target parameters slowly
@@ -246,7 +253,7 @@ if __name__ == '__main__':
     avg_reward_list = []
 
     # Takes about 4 min to train
-    for ep in tqdm.tqdm(range(total_episodes)):
+    for ep in tqdm.tqdm (range(total_episodes)):
 
         prev_state = env.reset()
         print("prev_state: ", prev_state)
@@ -274,11 +281,11 @@ if __name__ == '__main__':
             update_target(target_critic.variables, critic_model.variables, tau)
 
             # End this episode when `done` is True
-            if done or step_i == episode_length:
+            if done or step_i ==episode_length:
                 break
 
             prev_state = state
-            step_i += 1
+            step_i +=1
 
         ep_reward_list.append(episodic_reward)
 
