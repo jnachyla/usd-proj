@@ -93,6 +93,7 @@ class OUActionNoise:
         else:
             self.x_prev = np.zeros_like(self.mean)
 
+
 class Buffer:
     def __init__(self, buffer_capacity=100000, batch_size=64, num_states=-1, num_actions=-1):
         self.num_states = num_states
@@ -177,6 +178,7 @@ class Buffer:
 
         self.update(state_batch, action_batch, reward_batch, next_state_batch)
 
+
 # This update target parameters slowly
 # Based on rate `tau`, which is much less than one.
 @tf.function
@@ -241,7 +243,6 @@ if __name__ == '__main__':
     # Used to update target networks
     tau = 0.005
 
-    #buffer = Buffer1(buffer_capacity = 50000, batch_size = 64)
     buffer = Buffer(buffer_capacity=50000, batch_size=64, num_states=num_states, num_actions=num_actions)
 
     ep_reward_list = []
@@ -296,3 +297,5 @@ if __name__ == '__main__':
     plt.xlabel("Episode")
     plt.ylabel("Avg. Epsiodic Reward")
     plt.show()
+
+
