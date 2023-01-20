@@ -133,28 +133,34 @@ class Buffer:
     def update(
             self, state_batch, action_batch, reward_batch, next_state_batch,
     ):
-        # Training and updating Actor & Critic networks.
-        # See Pseudo Code.
+
+        target_actions = target_actor(next_state_batch, training=True)
+        legal_target_noised = self.noised_actions(target_actions)
+        target_critic_min = self.double_target_critic(next_state_batch, legal_target_noised)
+        y = reward_batch + gamma * target_critic_min
+
         with tf.GradientTape() as tape:
-            target_actions = target_actor(next_state_batch, training=True)
 
-            legal_target_noised = self.noised_actions(target_actions)
+            critic_value1 = critic_model1([state_batch, action_batch], training=True)
+            critic_loss1 = tf.math.reduce_mean(tf.math.square(y - critic_value1))
 
-            y = reward_batch + gamma * target_critic(
-                [next_state_batch, legal_target_noised], training=True
-            )
-
-            critic_value = critic_model([state_batch, action_batch], training=True)
-            critic_loss = tf.math.reduce_mean(tf.math.square(y - critic_value))
-
-        critic_grad = tape.gradient(critic_loss, critic_model.trainable_variables)
+        critic_grad1 = tape.gradient(critic_loss1, critic_model1.trainable_variables)
         critic_optimizer.apply_gradients(
-            zip(critic_grad, critic_model.trainable_variables)
+            zip(critic_grad1, critic_model1.trainable_variables)
+        )
+
+        with tf.GradientTape() as tape:
+            critic_value2 = critic_model2([state_batch, action_batch], training=True)
+            critic_loss2 = tf.math.reduce_mean(tf.math.square(y - critic_value2))
+
+        critic_grad2 = tape.gradient(critic_loss2, critic_model2.trainable_variables)
+        critic_optimizer2.apply_gradients(
+            zip(critic_grad2, critic_model2.trainable_variables)
         )
 
         with tf.GradientTape() as tape:
             actions = actor_model(state_batch, training=True)
-            critic_value = critic_model([state_batch, actions], training=True)
+            critic_value = critic_model1([state_batch, actions], training=True)
             # Used `-value` as we want to maximize the value given
             # by the critic for our actions
             actor_loss = -tf.math.reduce_mean(critic_value)
@@ -166,12 +172,21 @@ class Buffer:
 
     @tf.function
     def noised_actions(self, target_actions):
-        gauss = tf.random.normal(shape=(64, 1), mean=0.0, stddev=0.0)
+        gauss = tf.random.normal(shape=(64, 1), mean=0.0, stddev=0.2)
         target_actions_noised = target_actions + gauss
         legal_target_noised = tf.clip_by_value(
             target_actions_noised, -2.0, 2.0, name=None
         )
         return legal_target_noised
+
+    @tf.function
+    def double_target_critic(self, next_state_batch, legal_target_noised):
+
+        target_critic1_value = target_critic1([next_state_batch, legal_target_noised], training=True)
+        target_critic2_value = target_critic2([next_state_batch, legal_target_noised], training=True)
+        target_critic_min = tf.math.minimum(target_critic1_value, target_critic2_value)
+
+        return target_critic_min
 
     # We compute the loss and update parameters
     def learn(self):
@@ -232,20 +247,24 @@ if __name__ == '__main__':
     ou_noise = OUActionNoise(mean=np.zeros(1), std_deviation=float(std_dev) * np.ones(1))
 
     actor_model = get_actor(num_states, upper_bound)
-    critic_model = get_critic(num_states, num_actions)
+    critic_model1 = get_critic(num_states, num_actions)
+    critic_model2 = get_critic(num_states, num_actions)
 
     target_actor = get_actor(num_states, upper_bound)
-    target_critic = get_critic(num_states, num_actions)
+    target_critic1 = get_critic(num_states, num_actions)
+    target_critic2 = get_critic(num_states, num_actions)
 
     # Making the weights equal initially
     target_actor.set_weights(actor_model.get_weights())
-    target_critic.set_weights(critic_model.get_weights())
+    target_critic1.set_weights(critic_model1.get_weights())
+    target_critic2.set_weights(critic_model2.get_weights())
 
     # Learning rate for actor-critic models
     critic_lr = 0.002
     actor_lr = 0.001
 
     critic_optimizer = tf.keras.optimizers.Adam(critic_lr)
+    critic_optimizer2 = tf.keras.optimizers.Adam(critic_lr)
     actor_optimizer = tf.keras.optimizers.Adam(actor_lr)
 
     total_episodes = 100
@@ -286,7 +305,8 @@ if __name__ == '__main__':
 
             buffer.learn()
             update_target(target_actor.variables, actor_model.variables, tau)
-            update_target(target_critic.variables, critic_model.variables, tau)
+            update_target(target_critic1.variables, critic_model1.variables, tau)
+            update_target(target_critic2.variables, critic_model2.variables, tau)
 
             # End this episode when `done` is True
             #if done or step_i == episode_length:
@@ -309,5 +329,3 @@ if __name__ == '__main__':
     plt.xlabel("Episode")
     plt.ylabel("Avg. Epsiodic Reward")
     plt.show()
-
-

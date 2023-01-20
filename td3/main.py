@@ -228,6 +228,7 @@ def policy(state, noise_object):
     return [np.squeeze(legal_action)]
 
 
+
 if __name__ == '__main__':
     problem = "Pendulum-v1"
     problem2 = 'InvertedPendulum-v4'
@@ -325,3 +326,5 @@ if __name__ == '__main__':
     plt.xlabel("Episode")
     plt.ylabel("Avg. Epsiodic Reward")
     plt.show()
+
+
