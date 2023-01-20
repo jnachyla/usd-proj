@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib
 import evaluators
 
-matplotlib.use('TkAgg')  # zainstalowalam tkinter w terminalu komenda: sudo apt-get install python3-tk
+matplotlib.use('TkAgg')  
 from matplotlib import pyplot as plt
 
 
@@ -42,7 +42,7 @@ def get_critic(num_states, num_actions):
     '''
     Zwraca sieć Krytyka.
     Aproksymator funkcji wartości dla polityki.
-    Wejście: stany i akcje - zmiana!
+    Wejście: stany i akcje
     Wyjście: wartość wypłaty
     '''
     # State as input
