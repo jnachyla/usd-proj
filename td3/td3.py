@@ -173,7 +173,8 @@ class Buffer:
     @tf.function
     def noised_actions(self, target_actions):
         gauss = tf.random.normal(shape=(64, 1), mean=0.0, stddev=0.2)
-        target_actions_noised = target_actions + gauss
+        legal_gauss = tf.clip_by_value(gauss, -1.0, 1.0)
+        target_actions_noised = target_actions + legal_gauss
         legal_target_noised = tf.clip_by_value(
             target_actions_noised, -2.0, 2.0, name=None
         )
