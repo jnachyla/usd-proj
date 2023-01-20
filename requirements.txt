@@ -8,3 +8,4 @@ importlib-metadata==4.13.0
 mujoco
 imageio
 stable-baselines3
+pybullet==3.2.5

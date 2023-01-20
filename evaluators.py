@@ -22,7 +22,7 @@ def evaluate_policy(model, env, eval_episodes=100, render=False):
         obs = env.reset()
         done = False
         step = 0
-        while not done or step > episode_max_length:
+        while not done or step < episode_max_length:
             if render:
                 env.render()
             action = model.predict(obs)
