@@ -1,3 +1,5 @@
+from tqdm import tqdm
+import numpy as np
 
 def evaluate_policy(model, env, eval_episodes=100, render=False):
     """run several episodes using the best agent policy
@@ -15,7 +17,8 @@ def evaluate_policy(model, env, eval_episodes=100, render=False):
 
     avg_reward = 0.
     episode_max_length = 100000
-    for i in range(eval_episodes):
+    rewards = []
+    for i in tqdm(range(eval_episodes)):
         obs = env.reset()
         done = False
         step = 0
@@ -30,10 +33,12 @@ def evaluate_policy(model, env, eval_episodes=100, render=False):
                 obs, reward, done, _ = env.step(action)
             avg_reward += reward
             step += 1
+            rewards.append(reward)
 
     avg_reward /= eval_episodes
+    std_dev = np.std(rewards)
 
     print("\n---------------------------------------")
-    print("Evaluation over {:d} episodes: {:f}".format(eval_episodes, avg_reward))
+    print("Evaluation over {:d} episodes: {:f} with standard deviation: {:f}".format(eval_episodes, avg_reward, std_dev))
     print("---------------------------------------")
     return avg_reward

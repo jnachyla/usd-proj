@@ -10,6 +10,7 @@ from keras import layers
 from keras import backend as K
 import numpy as np
 import matplotlib
+import evaluators
 
 matplotlib.use('TkAgg')  # zainstalowalam tkinter w terminalu komenda: sudo apt-get install python3-tk
 from matplotlib import pyplot as plt
@@ -230,6 +231,13 @@ def policy(state, noise_object):
 
     return [np.squeeze(legal_action)]
 
+class Td3EvalModel(object):
+    def __init__(self, actor):
+        self.actor = actor
+    def predict(self, state):
+        state_tensor = tf.expand_dims(tf.convert_to_tensor(state), 0)
+        action_tensor = self.actor(state_tensor)
+        return [np.squeeze(tf.squeeze(action_tensor).numpy())]
 
 
 if __name__ == '__main__':
@@ -333,6 +341,9 @@ if __name__ == '__main__':
         print("Episode * {} * Avg Reward is ==> {}".format(ep, avg_reward))
         avg_reward_list.append(avg_reward)
 
+
+
+    evaluators.evaluate_policy(Td3EvalModel(actor_model), env=env)
     # Plotting graph
     # Episodes versus Avg. Rewards
     plt.plot(avg_reward_list)
