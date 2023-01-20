@@ -26,8 +26,8 @@ def get_actor(num_states, upper_bound):
     last_init = tf.random_uniform_initializer(minval=-0.003, maxval=0.003)
 
     inputs = layers.Input(shape=(num_states,))
-    out = layers.Dense(30, activation="relu")(inputs)
-    out = layers.Dense(20, activation="relu")(out)
+    out = layers.Dense(256, activation="relu")(inputs)
+    out = layers.Dense(256, activation="relu")(out)
     outputs = layers.Dense(1, activation="tanh", kernel_initializer=last_init)(out)
 
     outputs = outputs * upper_bound
@@ -93,7 +93,6 @@ class OUActionNoise:
         else:
             self.x_prev = np.zeros_like(self.mean)
 
-
 class Buffer:
     def __init__(self, buffer_capacity=100000, batch_size=64, num_states=-1, num_actions=-1):
         self.num_states = num_states
@@ -119,7 +118,7 @@ class Buffer:
         # replacing old records
         index = self.buffer_counter % self.buffer_capacity
 
-        self.state_buffer[index] = obs_tuple[0][0]
+        self.state_buffer[index] = obs_tuple[0]
         self.action_buffer[index] = obs_tuple[1]
         self.reward_buffer[index] = obs_tuple[2]
         self.next_state_buffer[index] = obs_tuple[3]
@@ -178,7 +177,6 @@ class Buffer:
 
         self.update(state_batch, action_batch, reward_batch, next_state_batch)
 
-
 # This update target parameters slowly
 # Based on rate `tau`, which is much less than one.
 @tf.function
@@ -198,6 +196,7 @@ def policy(state, noise_object):
     legal_action = np.clip(sampled_actions, lower_bound, upper_bound)
 
     return [np.squeeze(legal_action)]
+
 
 
 if __name__ == '__main__':
@@ -229,17 +228,21 @@ if __name__ == '__main__':
     target_actor.set_weights(actor_model.get_weights())
     target_critic.set_weights(critic_model.get_weights())
 
-    critic_optimizer = tf.keras.optimizers.Adam(learning_rate=0.02)
-    actor_optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+    # Learning rate for actor-critic models
+    critic_lr = 0.002
+    actor_lr = 0.001
+
+    critic_optimizer = tf.keras.optimizers.Adam(critic_lr)
+    actor_optimizer = tf.keras.optimizers.Adam(actor_lr)
 
     total_episodes = 100
-    episode_length = 10000
     # Discount factor for future rewards
     gamma = 0.99
     # Used to update target networks
     tau = 0.005
 
-    buffer = Buffer(50000, 64, num_states, num_actions)
+    #buffer = Buffer1(buffer_capacity = 50000, batch_size = 64)
+    buffer = Buffer(buffer_capacity=50000, batch_size=64, num_states=num_states, num_actions=num_actions)
 
     ep_reward_list = []
     # To store average reward history of last few episodes
@@ -249,7 +252,6 @@ if __name__ == '__main__':
     for ep in tqdm.tqdm(range(total_episodes)):
 
         prev_state = env.reset()
-        print("prev_state: ", prev_state)
         episodic_reward = 0
         step_i = 0
 
@@ -264,7 +266,7 @@ if __name__ == '__main__':
 
             action = policy(tf_prev_state, ou_noise)
             # Recieve state and reward from environment.
-            state, reward, done, truncated, info = env.step(action)
+            state, reward, done, info = env.step(action)
 
             buffer.record((prev_state, action, reward, state))
             episodic_reward += reward
@@ -274,7 +276,8 @@ if __name__ == '__main__':
             update_target(target_critic.variables, critic_model.variables, tau)
 
             # End this episode when `done` is True
-            if done or step_i == episode_length:
+            #if done or step_i == episode_length:
+            if done:
                 break
 
             prev_state = state
@@ -293,5 +296,3 @@ if __name__ == '__main__':
     plt.xlabel("Episode")
     plt.ylabel("Avg. Epsiodic Reward")
     plt.show()
-
-
