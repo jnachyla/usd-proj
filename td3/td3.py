@@ -131,7 +131,7 @@ class Buffer:
     # This provides a large speed up for blocks of code that contain many small TensorFlow operations such as this one.
     @tf.function
     def update(
-            self, state_batch, action_batch, reward_batch, next_state_batch,
+            self, state_batch, action_batch, reward_batch, next_state_batch,update_actor = True,
     ):
 
         target_actions = target_actor(next_state_batch, training=True)
@@ -157,18 +157,18 @@ class Buffer:
         critic_optimizer2.apply_gradients(
             zip(critic_grad2, critic_model2.trainable_variables)
         )
+        if update_actor:
+            with tf.GradientTape() as tape:
+                actions = actor_model(state_batch, training=True)
+                critic_value = critic_model1([state_batch, actions], training=True)
+                # Used `-value` as we want to maximize the value given
+                # by the critic for our actions
+                actor_loss = -tf.math.reduce_mean(critic_value)
 
-        with tf.GradientTape() as tape:
-            actions = actor_model(state_batch, training=True)
-            critic_value = critic_model1([state_batch, actions], training=True)
-            # Used `-value` as we want to maximize the value given
-            # by the critic for our actions
-            actor_loss = -tf.math.reduce_mean(critic_value)
-
-        actor_grad = tape.gradient(actor_loss, actor_model.trainable_variables)
-        actor_optimizer.apply_gradients(
-            zip(actor_grad, actor_model.trainable_variables)
-        )
+            actor_grad = tape.gradient(actor_loss, actor_model.trainable_variables)
+            actor_optimizer.apply_gradients(
+                zip(actor_grad, actor_model.trainable_variables)
+            )
 
     @tf.function
     def noised_actions(self, target_actions):
@@ -189,7 +189,7 @@ class Buffer:
         return target_critic_min
 
     # We compute the loss and update parameters
-    def learn(self):
+    def learn(self, update_actor = True):
         # Get sampling range
         record_range = min(self.buffer_counter, self.buffer_capacity)
         # Randomly sample indices
@@ -202,7 +202,7 @@ class Buffer:
         reward_batch = tf.cast(reward_batch, dtype=tf.float32)
         next_state_batch = tf.convert_to_tensor(self.next_state_buffer[batch_indices])
 
-        self.update(state_batch, action_batch, reward_batch, next_state_batch)
+        self.update(state_batch, action_batch, reward_batch, next_state_batch, update_actor)
 
 
 # This update target parameters slowly
@@ -274,6 +274,8 @@ if __name__ == '__main__':
     # Used to update target networks
     tau = 0.005
 
+    update_delay = 2
+
     buffer = Buffer(buffer_capacity=50000, batch_size=64, num_states=num_states, num_actions=num_actions)
 
     ep_reward_list = []
@@ -303,10 +305,13 @@ if __name__ == '__main__':
             buffer.record((prev_state, action, reward, state))
             episodic_reward += reward
 
-            buffer.learn()
-            update_target(target_actor.variables, actor_model.variables, tau)
-            update_target(target_critic1.variables, critic_model1.variables, tau)
-            update_target(target_critic2.variables, critic_model2.variables, tau)
+            if step_i % update_delay == 0:
+                buffer.learn(update_actor=True)
+                update_target(target_actor.variables, actor_model.variables, tau)
+                update_target(target_critic1.variables, critic_model1.variables, tau)
+                update_target(target_critic2.variables, critic_model2.variables, tau)
+            else:
+                buffer.learn(update_actor=False)
 
             # End this episode when `done` is True
             #if done or step_i == episode_length:
