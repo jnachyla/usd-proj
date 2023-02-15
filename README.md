@@ -1,4 +1,15 @@
-# Projekt USD
+# Project USD
+
+Implementation of TD3 algorithm based on DDPG implementation in keras:
+
+https://keras.io/examples/rl/ddpg_pendulum/
+
+Tested on Pendulum(https://gymnasium.farama.org/environments/classic_control/pendulum/) environment.
+Evaluation over 100 episodes: Mean -156.063194 with standard deviation: 2.323086.
+
+![alt text](Isolated.png "Title")
+
+
 ## Tworzenie wirtualnego środowiska
 W celu utworzenia środowiska wirtualnego należy wpisać w terminalu komendę:
 ```bash
