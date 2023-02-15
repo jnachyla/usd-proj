@@ -1,4 +1,4 @@
-# Project (USD, WUT)
+# TD3 implementation (USD,EiTI WUT)
 
 Implementation of TD3( Twin Delayed DDPG - https://arxiv.org/abs/1802.09477v3 ) algorithm based on DDPG Keras implementation example: https://keras.io/examples/rl/ddpg_pendulum/. Implementation of model with training and evaluation is located in:
 
