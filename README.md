@@ -1,36 +1,46 @@
-# Project USD
+# Project (USD, WUT)
 
-Implementation of TD3 algorithm based on DDPG implementation in keras:
+Implementation of TD3( Twin Delayed DDPG - https://arxiv.org/abs/1802.09477v3 ) algorithm based on DDPG Keras implementation example: https://keras.io/examples/rl/ddpg_pendulum/. Implementation of model with training and evaluation is located in:
 
-https://keras.io/examples/rl/ddpg_pendulum/
+```/td3/td3.py``` python file.
 
-Tested on Pendulum(https://gymnasium.farama.org/environments/classic_control/pendulum/) environment.
-Evaluation over 100 episodes: Mean -156.063194 with standard deviation: 2.323086.
+## Authors
+- https://github.com/Marta181
+- https://github.com/jnachyla
 
-![alt text](Isolated.png "Title")
+## Results
+
+Model was tested on Pendulum environment(https://gymnasium.farama.org/environments/classic_control/pendulum/).
+
+Model was evaluated over 100 episodes with results: Mean Reward -156.063194 with standard deviation: 2.323086.
+
+Episode Reward in Training TD3 on Pendulum Env.
+
+![alt text](wykres_td3_nasze.png "Training TD3 on Pendulum")
 
 
-## Tworzenie wirtualnego środowiska
-W celu utworzenia środowiska wirtualnego należy wpisać w terminalu komendę:
+## Instalation
+### Virtual Env
+To create a virtual environment, enter the following command in the terminal:
 ```bash
-$ python3 -m venv nazwa_srodowiska
+$ python3 -m venv environment_name
 ```
-W kolejnym kroku należy aktywować środowisko wirtualne. 
-Na Linuxie służy do tego komenda:
+In the next step, activate the virtual environment.
+On Linux, the command is:
 ```bash
-$ source nazwa_srodowiska/bin/activate
+$ source environment_name/bin/activate
 ```
-Na systemach Windows:
+On Windows systems:
 ```bash
-> .\nazwa_srodowiska\Scripts\activate.bat
+> .\environment_name\Scripts\activate.bat
 ```
-Nazwa środowiska pojawi się w nawiasach na początku linii. Środowisko jest gotowe. 
+The name of the environment will appear in parentheses at the beginning of the line. The environment is ready.
 
-Źródło: https://kamil.kwapisz.pl/srodowiska-wirtualne/#Pipenv
-## Instalacja wymaganych bibliotek
-Wymagane biblioteki i ich wersje znajdują się w pliku requirements.txt.
+Source: https://kamil.kwapisz.pl/srodowiska-wirtualne/#Pipenv
+### Install required libraries
+The required libraries and their versions are in the requirements.txt file.
 
-Po utworzeniu wirtualnego środowiska można je zainstalować poleceniem:
+After creating the virtual environment, you can install it with the command:
 ```bash
 pip3 install -r requirements.txt
 ```
